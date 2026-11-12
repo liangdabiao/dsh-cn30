@@ -1,0 +1,5 @@
+# 社媒雷达 CN30：cn30_search 工具（三平台话题搜索/报告）+ cn-last30days 技能 + 侧栏看板。
+# 浏览器半边由 dsh.client 声明加载。
+- insert:
+    - id: cn30
+      name: 'dsh-cn30'
