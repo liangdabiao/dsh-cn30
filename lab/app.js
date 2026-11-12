@@ -219,8 +219,10 @@
     const tabs = platKeys.map((k) =>
       `<button class="ptab${k === cur ? ' on' : ''}" data-plat="${k}" style="--pt:${esc(platColor(k))}">${PLAT[k]?.icon || ''} ${esc(PLAT[k]?.label || k)} <span class="n">${raw?.platforms?.[k]?.total ?? 0}</span></button>`).join('')
 
+    // 不用 <a target="_blank">：桌面端 WebContentsView 对 window.open 一律 deny，
+    // 同源 dsh-app: 地址既不开新窗口也不交给系统浏览器，点了没反应。改成面板内嵌查看器。
     const reportBtn = meta.has_report
-      ? `<a class="btn accent" href="/cn30/api/searches/${encodeURIComponent(id)}/report" target="_blank" rel="noreferrer">${ic('ext')}打开完整报告</a>`
+      ? `<button class="btn accent" data-open-report="${esc(id)}">${ic('ext')}打开完整报告</button>`
       : `<button class="btn ghost" id="raw-report">${ic('play')}直出纯数据版报告</button>`
 
     return `
@@ -275,6 +277,52 @@
         toast('纯数据版报告已生成')
         location.reload()
       } catch (e) { toast(e.message, true); rawBtn.disabled = false }
+    }
+  }
+
+  // ---------- 报告查看器（面板内嵌，不依赖新窗口） ----------
+  // 桌面端 dsh-app 协议的 WebContentsView 把 window.open/target=_blank 全部 deny（只有 https:
+  // 会交给系统浏览器），所以报告只能用面板内覆盖层显示：fetch 同源 HTML → iframe.srcdoc。
+  async function openReportView(id) {
+    document.getElementById('report-view')?.remove()
+    const el = document.createElement('div')
+    el.id = 'report-view'
+    el.className = 'report-view'
+    el.innerHTML = `
+      <div class="rv-panel" role="dialog" aria-modal="true" aria-label="研究报告">
+        <div class="rv-bar">
+          <div class="rv-title">${ic('list')}<span>研究报告</span></div>
+          <div class="rv-actions">
+            <button class="btn ghost" id="rv-close">关闭</button>
+          </div>
+        </div>
+        <div class="rv-body"><div class="loading">LOADING…</div></div>
+      </div>`
+    document.body.appendChild(el)
+    const body = el.querySelector('.rv-body')
+    const close = () => {
+      removeEventListener('keydown', onKey)
+      el.remove()
+    }
+    const onKey = (e) => { if (e.key === 'Escape') close() }
+    addEventListener('keydown', onKey)
+    el.querySelector('#rv-close').onclick = close
+    el.addEventListener('click', (e) => { if (e.target === el) close() })
+    try {
+      const res = await fetch(`/cn30/api/searches/${encodeURIComponent(id)}/report`, { cache: 'no-store' })
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}))
+        throw new Error(detail.error || `HTTP ${res.status}`)
+      }
+      const html = await res.text()
+      const frame = document.createElement('iframe')
+      frame.className = 'rv-frame'
+      frame.title = '研究报告'
+      frame.srcdoc = html // 报告自带的样式/脚本（平台 tab 切换）原样执行
+      body.innerHTML = ''
+      body.appendChild(frame)
+    } catch (e) {
+      body.innerHTML = `<div class="empty"><div class="e-title">报告打不开</div><p>${esc(e.message)}</p><p>若是「报告还没生成」，先在对话里让 agent 跑一次 cn30_search(action="report")。</p></div>`
     }
   }
 
@@ -359,6 +407,10 @@
         '4. 按 LAW 规则输出：数据速览 → 我的发现 → 核心发现 → 页脚逐字附带。',
         '现在请先问我想研究什么话题。',
       ].join('\n'), '已在宿主开新对话——agent 会先问你话题')
+    })
+    // 绑定在 bindCommon 里：条目接口失败时按钮也在，报告仍应能打开
+    document.querySelectorAll('[data-open-report]').forEach((b) => {
+      b.onclick = () => { openReportView(b.dataset.openReport) }
     })
     const searchBtn = document.getElementById('f-search')
     if (searchBtn) searchBtn.onclick = async () => {

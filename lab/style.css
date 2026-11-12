@@ -191,6 +191,22 @@ svg.ic { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none
 /* ---------- 加载 ---------- */
 .loading { padding: var(--sp-10) 0; text-align: center; color: var(--text-helper); font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; }
 
+/* ---------- 报告查看器（覆盖层，避免依赖 window.open） ---------- */
+.report-view { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: var(--sp-5); background: rgba(10, 10, 10, .55); backdrop-filter: blur(2px); }
+.rv-panel { display: flex; flex-direction: column; width: 100%; height: 100%; max-width: 1280px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(0, 0, 0, .28); }
+.rv-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line-subtle); flex: 0 0 auto; }
+.rv-title { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.rv-title .ic { width: 15px; height: 15px; }
+.rv-actions { display: inline-flex; gap: var(--sp-2); }
+.rv-body { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; }
+.rv-body > .loading, .rv-body > .empty { margin: auto; }
+.rv-frame { width: 100%; height: 100%; border: 0; display: block; background: var(--paper); }
+
+@media (max-width: 860px) {
+  .report-view { padding: 0; }
+  .rv-panel { max-width: none; border: 0; }
+}
+
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; }
   .rail { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line-subtle); }
