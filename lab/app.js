@@ -164,7 +164,7 @@
               <div class="c-title">${esc(r.keyword)}</div>
               ${r.has_report ? '<span class="chip done">有报告</span>' : '<span class="chip">待研究</span>'}
             </div>
-            <div class="c-sub">共 ${r.total_items} 条 · ${Object.entries(r.totals).map(([p, n]) => `${esc(PLAT[p]?.label || p)} ${n}`).join(' / ')}</div>
+            <div class="c-sub">共 ${r.total_items} 条 · ${Object.entries(r.totals).map(([p, n]) => `${esc(PLAT[p]?.label || p)} ${n}`).join(' / ')}${Object.keys(r.errors || {}).length ? ` · <span style="color:#e05a4e">${Object.keys(r.errors).length} 个平台失败</span>` : ''}</div>
             <div class="c-foot"><span>${esc(String(r.searched_at).slice(0, 16).replace('T', ' '))}</span><span style="margin-left:auto">${esc(r.date_range?.from || '')} ~ ${esc(r.date_range?.to || '')}</span></div>
           </a>`).join('')}</div>`
         : `<div class="empty"><div class="e-title">还没有搜索记录</div><p>输入话题点「搜索三平台」，或「去对话研究」让 agent 预研关键词后带你看三平台讨论与舆情趋势。</p></div>`}
@@ -312,20 +312,24 @@
   }
 
   async function bindSettings() {
-    try {
-      const { settings } = await api('/api/settings')
-      const keyHint = document.getElementById('s-key-hint')
-      if (keyHint) keyHint.textContent = settings.has_key
-        ? `已配置（…${settings.key_tail || '******'}${settings.from_env ? '，其中环境变量可用' : ''}）。重新输入会覆盖。`
-        : '未配置。'
-      const inp = document.getElementById('s-key')
-      if (inp && document.activeElement !== inp) inp.placeholder = settings.has_key ? `已配置（…${settings.key_tail}），输入新值覆盖` : 'ak_…'
-      const proxy = document.getElementById('s-proxy')
-      if (proxy && document.activeElement !== proxy) proxy.value = settings.proxy_url || ''
-      const base = document.getElementById('s-base')
-      if (base && document.activeElement !== base) base.value = settings.api_base || ''
-    } catch { /* 宿主未就绪 */ }
-    const bind = (id, payload) => {
+    // 设置页的提示/占位符/输入值统一由服务端状态刷新（保存后也要再刷一次，否则提示还是旧的）
+    async function refreshSettings() {
+      try {
+        const { settings } = await api('/api/settings')
+        const keyHint = document.getElementById('s-key-hint')
+        if (keyHint) keyHint.textContent = settings.has_key
+          ? `已配置（…${settings.key_tail || '******'}${settings.from_env ? '，其中环境变量可用' : ''}）。重新输入会覆盖。`
+          : '未配置。'
+        const inp = document.getElementById('s-key')
+        if (inp && document.activeElement !== inp) inp.placeholder = settings.has_key ? `已配置（…${settings.key_tail}），输入新值覆盖` : 'ak_…'
+        const proxy = document.getElementById('s-proxy')
+        if (proxy && document.activeElement !== proxy) proxy.value = settings.proxy_url || ''
+        const base = document.getElementById('s-base')
+        if (base && document.activeElement !== base) base.value = settings.api_base || ''
+      } catch { /* 宿主未就绪 */ }
+    }
+    await refreshSettings()
+    const bind = (id, payload, clearInput = false) => {
       const btn = document.getElementById(id)
       if (!btn) return
       btn.onclick = async () => {
@@ -333,11 +337,13 @@
           const input = btn.parentElement.querySelector('input')
           await apiPost('/api/settings', payload(input.value.trim()))
           toast('设置已保存')
+          if (clearInput) input.value = ''
+          await refreshSettings()
           loadCatalog().catch(() => {})
         } catch (e) { toast(e.message, true) }
       }
     }
-    bind('s-key-save', (v) => ({ api_key: v }))
+    bind('s-key-save', (v) => ({ api_key: v }), true)
     bind('s-proxy-save', (v) => ({ proxy_url: v }))
     bind('s-base-save', (v) => ({ api_base: v }))
   }
@@ -370,7 +376,15 @@
           count: Number(document.getElementById('f-count')?.value) || 50,
           days: Number(document.getElementById('f-days')?.value) || 30,
         })
-        toast(`搜索完成：共 ${r.search.total_items} 条`)
+        const errs = Object.entries(r.search.errors || {})
+        if (!r.search.total_items && errs.length) {
+          // 平台全挂时不要报「完成 0 条」——那是接口/网络/Key 的问题，不是没话题
+          toast(errs.length >= (r.search.platforms || []).length
+            ? `搜索失败：${errs[0][1]}`
+            : `部分平台失败：${errs.map(([p]) => PLAT[p]?.label || p).join(' / ')}`, true)
+        } else {
+          toast(`搜索完成：共 ${r.search.total_items} 条${errs.length ? `（${errs.length} 个平台失败）` : ''}`)
+        }
         location.hash = `#/s/${encodeURIComponent(r.search.search_id)}`
       } catch (e) {
         toast(e.message, true)

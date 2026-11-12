@@ -37,6 +37,9 @@ test('store：settings / 搜索记录生命周期 / 中文 id 消毒', () => {
   assert.equal(DATA_DIR, join(tmp, 'cn30'))
   assert.equal(getMeta(meta.search_id).keyword, 'AI视频工具')
   assert.equal(getRaw(meta.search_id).platforms.xhs.total, 2)
+  // 逐平台错误要落盘并出现在公开 meta 里（面板据此区分「接口挂了」和「没搜到」）
+  assert.deepEqual(getMeta(meta.search_id).errors, { dy: '积分不足' })
+  assert.deepEqual(listSearches()[0].errors, { dy: '积分不足' })
   assert.equal(listSearches().length, 1)
   assert.throws(() => getMeta('../x'), /非法/)
 

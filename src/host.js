@@ -154,6 +154,14 @@ export const cn30SearchTool = {
       }
       const totalsEmpty = meta.total_items === 0
       if (totalsEmpty) {
+        // 先分清「接口全挂」和「真的没搜到」：前者是 Key/网络/接口问题，不该建议换关键词
+        const plats = Object.values(data.platforms)
+        const errs = plats.filter((p) => p.error)
+        if (errs.length && errs.length >= plats.length) {
+          return result(false,
+            `搜索失败：${errs[0].error}（三个平台都没返回数据，通常是 Key 无效/积分不足/网络或代理不通）`,
+            lines.join('\n'), buildFooter(data, meta.search_id))
+        }
         return result(false,
           `三平台均无结果（关键词可能太生僻或平台收录有限）。建议换更口语化的关键词重试。`,
           lines.join('\n'), buildFooter(data, meta.search_id))

@@ -1,6 +1,6 @@
 {
   "name": "dsh-cn30",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "社媒雷达 CN30 · 中国社媒话题研究：从小红书/抖音/公众号三大平台搜索近30天真实讨论（互动数据+作者+链接），跨平台对比舆情趋势，agent 写研究报告内嵌交互式 HTML + 侧栏看板。需 RedFox API Key，移植自 redfox-data/redfox-community skills/cn-last30days。",
   "license": "MIT",
   "type": "module",
