@@ -3,6 +3,8 @@
 DeepSeek Harness（dsh）插件：**中国社媒话题研究**。从小红书、抖音、公众号三大平台搜索近 30 天真实讨论（标题/作者/互动数据/链接），agent 跨平台对比分析舆情趋势、撰写研究报告内嵌交互式 HTML，侧栏看板同步呈现。
 
 移植自 [redfox-data/redfox-community](https://github.com/redfox-data/redfox-community) 的 `skills/cn-last30days`（Python 引擎全量重写为 Node 原生，**零 Python 依赖**；输出 LAW 规则与平台信号口径完整保留）。
+<img width="1659" height="1347" alt="image" src="https://github.com/user-attachments/assets/547be0b8-17e3-42c0-bc65-cfc851b3780d" />
+
 
 ## 三种平台信号
 
