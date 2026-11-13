@@ -40,6 +40,32 @@
     return body
   }
 
+  // 打开外部链接：桌面端 iframe 里 window.open 会被 WebContentsView deny，
+  // 先请宿主用系统默认浏览器打开；宿主不支持（网页版/无桌面）时退回新窗口。
+  async function openLink(u) {
+    if (!u || u === '#' || u === 'about:blank') return
+    try {
+      const r = await apiPost('/api/open', { url: u })
+      if (r?.ok) { toast('已在系统浏览器打开'); return }
+      throw new Error(r?.error || '打开失败')
+    } catch (e) {
+      const win = window.open(u, '_blank', 'noopener')
+      if (!win) {
+        const hint = /404|not found/i.test(String(e.message))
+          ? '宿主还没重启（/api/open 未上线），重启 dsh 后就能用系统浏览器打开'
+          : e.message
+        toast(`链接打不开：${hint}`, true)
+      }
+    }
+  }
+
+  // 面板里的外链一律交给系统浏览器（桌面端 <a target="_blank"> 同样会被 deny）
+  function bindExternalLinks() {
+    document.querySelectorAll('a[target="_blank"]').forEach((a) => {
+      a.onclick = (e) => { e.preventDefault(); e.stopPropagation(); openLink(a.getAttribute('href')) }
+    })
+  }
+
   let toastTimer = null
   function toast(msg, isErr) {
     $toast.textContent = msg
@@ -190,6 +216,7 @@
         </div>
         ${it.url ? `<a class="p-go" href="${esc(it.url)}" target="_blank" rel="noreferrer" title="查看原文">${ic('ext')}</a>` : ''}
       </div>`).join('')
+    bindExternalLinks()
   }
 
   async function viewSearch(id) {
@@ -398,6 +425,7 @@
 
   // ---------- 渲染辅助 ----------
   function bindCommon() {
+    bindExternalLinks()
     document.querySelectorAll('[data-newflow]').forEach((b) => {
       b.onclick = () => sendAgentPrompt([
         '请研究国内社媒近 30 天关于某个话题的真实讨论（社媒雷达 CN30）：',
@@ -477,6 +505,12 @@
     }
     render().catch(() => {})
   }
+  // 报告 iframe 里的链接点击会 postMessage 过来，统一交给 openLink 走系统浏览器
+  addEventListener('message', (e) => {
+    if (e.origin !== location.origin) return
+    const m = e.data
+    if (m && m.type === 'dsh:open-link' && typeof m.url === 'string') openLink(m.url)
+  })
   addEventListener('hashchange', () => { state.platform = null; render() })
   boot()
   setTimeout(() => { if (!state.catalog?.version || state.catalog.version === '-') boot() }, 2500)

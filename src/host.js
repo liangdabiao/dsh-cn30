@@ -218,7 +218,7 @@ export const cn30SearchTool = {
       const html = formatReportHtml(raw, { maxItems: 50, reportMd: savedMd })
       const file = saveReportHtml(meta.search_id, html)
       return result(true,
-        `HTML 报告已生成${savedMd ? '（研究报告已内嵌）' : '（纯数据版，研究报告待写）'}：${file}${savedMd ? '' : '。请撰写研究报告后再次 report 提交，或直接把分析输出给用户。'}面板「社媒雷达 CN30」可直接查看。把关键发现按 LAW 规则完整输出给用户。`,
+        `HTML 报告已生成${savedMd ? '（研究报告已内嵌）' : '（纯数据版，研究报告待写）'}：${file}${savedMd ? '' : '。请撰写研究报告后再次 report 提交，或直接把分析输出给用户。'}桌面端 WebContentsView 会 deny window.open/target=_blank，报告只能在面板内查看——告诉用户点侧栏「社媒雷达 CN30」的搜索详情页再点「打开完整报告」（searchId=${meta.search_id}），不要把磁盘路径当成可点开的入口。把关键发现按 LAW 规则完整输出给用户。`,
         `报告文件: ${file}\n报告头: ${mdToHtml(savedMd).slice(0, 200)}…`)
     }
 
