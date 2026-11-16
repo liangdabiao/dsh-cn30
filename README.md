@@ -6,6 +6,12 @@ DeepSeek Harness（dsh）插件：**中国社媒话题研究**。从小红书、
 <img width="1659" height="1347" alt="image" src="https://github.com/user-attachments/assets/547be0b8-17e3-42c0-bc65-cfc851b3780d" />
 
 
+## 安装
+
+```bash
+dsh plugin --profile web add https://github.com/liangdabiao/dsh-cn30
+```
+
 ## 三种平台信号
 
 | 平台 | 内容特征 | 关键指标 | 解读 |
